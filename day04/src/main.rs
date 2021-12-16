@@ -6,11 +6,20 @@ const BOARD_SIZE: usize = 5;
 
 #[derive(Debug)]
 struct Board {
+    is_finished: bool,
     numbers: Vec<Vec<i32>>,
     marks: Vec<Vec<bool>>,
 }
 
 impl Board {
+    fn blank() -> Board {
+        Board {
+            is_finished: false,
+            numbers: Vec::new(),
+            marks: Vec::new(),
+        }
+    }
+
     fn push_row(&mut self, row: Vec<i32>) {
         self.numbers.push(row);
         self.marks.push(vec![false; BOARD_SIZE]);
@@ -27,7 +36,7 @@ impl Board {
         }
     }
 
-    fn is_bingo(&mut self) -> bool {
+    fn is_bingo(&self) -> bool {
         // check each row
         'outer: for i in 0..self.marks.len() {
             let row = &self.marks[i];
@@ -46,7 +55,7 @@ impl Board {
                 if j == BOARD_SIZE - 1 && self.marks[j][i] {
                     return true;
                 } else if self.marks[j][i] == false {
-                    continue 'outer;    
+                    continue 'outer;
                 }
             }
         }
@@ -54,7 +63,7 @@ impl Board {
         return false;
     }
 
-    fn compute_score(&mut self, final_number: i32) -> i32 {
+    fn compute_score(&self, final_number: i32) -> i32 {
         let mut sum = 0;
         for i in 0..self.marks.len() {
             let row = &self.marks[i];
@@ -78,6 +87,7 @@ fn main() -> std::io::Result<()> {
     let mut counter = 0;
     let mut draws: Vec<i32> = Vec::new();
     let mut current_board: Board = Board {
+        is_finished: false,
         numbers: Vec::new(),
         marks: Vec::new(),
     };
@@ -95,38 +105,50 @@ fn main() -> std::io::Result<()> {
                 .filter(|str| str.trim().is_empty() == false)
                 .map(|num| num.parse::<i32>().unwrap())
                 .collect::<Vec<i32>>();
-            println!("processing row: {:?}", row);
+            //println!("processing row: {:?}", row);
             current_board.push_row(row);
 
             if current_board.numbers.len() >= BOARD_SIZE {
                 boards.push(current_board);
                 current_board = Board {
+                    is_finished: false,
                     numbers: Vec::new(),
                     marks: Vec::new(),
                 };
             }
         }
 
-        println!("{} {}", line, counter);
+        //println!("{} {}", line, counter);
         counter += 1;
     }
 
     println!("draws: {:?}", draws);
 
-//    for board in boards.iter() {
-//        dbg!(&board);
-//    }
+    for board in boards.iter() {
+        dbg!(&board);
+    }
 
-    // first answer
+    let mut finished_boards = 0;
+
+    let boards_num = boards.len();
     'outer: for draw in draws {
         for board in boards.iter_mut() {
             board.mark_number(draw);
-            if board.is_bingo() {
-                println!("answer is: {}", board.compute_score(draw));
-                break 'outer;
+            if board.is_finished == false && board.is_bingo() {
+                board.is_finished = true;
+
+                if finished_boards == 0 {
+                    println!("first board: {:?} {}", board, draw);
+                    println!("first answer: {}", board.compute_score(draw));
+                } else if finished_boards == boards_num - 1 {
+                    println!("last board: {:?} {}", board, draw);
+                    println!("second answer: {}", board.compute_score(draw));
+                    break 'outer;
+                }
+
+                finished_boards += 1;
             }
         }
-        println!("draw {}:  board: {:?}", draw, boards[0]);
     }
 
     Ok(())
