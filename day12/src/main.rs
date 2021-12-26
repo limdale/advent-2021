@@ -8,7 +8,8 @@ fn traverse(
     node: &String,
     adj_list: &HashMap<String, Vec<String>>,
     visited: &HashSet<&String>,
-    path: &Vec<&String>,
+    path: &[&String],
+    has_visited_twice: bool,
 ) -> i32 {
     let mut new_vec = Vec::new();
     new_vec.extend(path);
@@ -19,12 +20,12 @@ fn traverse(
     new_visited.insert(node);
 
     if node == "end" {
-        println!("Final path: {:?}", new_vec);
+        //println!("Final path: {:?}", new_vec);
         return 1;
     }
 
     if !adj_list.contains_key(node) {
-        println!("Final path: {:?}", new_vec);
+        //println!("Final path: {:?}", new_vec);
         return 1;
     }
 
@@ -34,8 +35,17 @@ fn traverse(
     let mut count = 0;
     for next in edges {
         let is_uppercase = &next.to_uppercase() == next;
-        if next != "start" && (is_uppercase || (!is_uppercase && !visited.contains(next))) {
-            count += traverse(next, adj_list, &new_visited, &new_vec);
+        if next == "start" {
+            continue;
+        }
+        if is_uppercase {
+            count += traverse(next, adj_list, &new_visited, &new_vec, has_visited_twice);
+        } else if !is_uppercase {
+            if !visited.contains(next) {
+                count += traverse(next, adj_list, &new_visited, &new_vec, has_visited_twice);
+            } else if !has_visited_twice {
+                count += traverse(next, adj_list, &new_visited, &new_vec, true);
+            }
         }
     }
 
@@ -69,6 +79,7 @@ fn main() -> std::io::Result<()> {
         &adj_list,
         &HashSet::new(),
         &Vec::new(),
+        false,
     );
 
     println!("{:?}", adj_list);
